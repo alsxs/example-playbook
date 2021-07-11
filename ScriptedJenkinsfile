@@ -1,0 +1,23 @@
+node("ansible_docker"){
+    stage("Git checkout"){
+        git credentialsId: 'aa5177ce-7821-4216-92b0-38076676dfef', url: 'https://github.com/alsxs/example-playbook.git'
+    }
+    stage("Check key"){
+        secret_check=true
+    }
+    stage("Run playbook"){
+        if (secret_check){
+            sh 'ansible-vault decrypt secret --vault-password-file vault_pass'
+            sh 'mkdir ~/.ssh/'
+            sh 'mv ./secret ~/.ssh/id_rsa'
+            sh 'chmod 400 ~/.ssh/id_rsa'
+            sh 'echo -e "Host *\n   StrictHostKeyChecking no\n" >> ~/.ssh/config'
+            sh 'ansible-galaxy install -r requirements.yml -p roles'
+            sh 'ansible-playbook site.yml -i inventory/prod.yml'
+        }
+        else{
+            echo 'no more keys'
+        }
+
+    }
+}
